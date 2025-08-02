@@ -1,4 +1,4 @@
-import { createCanvas, loadImage, registerFont } from 'canvas';
+import { createCanvas, loadImage } from 'canvas';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 
@@ -42,51 +42,23 @@ export async function GET(request) {
     // Draw the template as background
     ctx.drawImage(templateImage, 0, 0, 1400, 900);
 
-    // Try to use a more elegant font, with fallbacks
-    let fontLoaded = false;
-    const fontOptions = [
-      'bold 56px "Times New Roman", serif',
-      'bold 56px Georgia, serif',
-      'bold 56px Arial, sans-serif',
-      '56px Arial, sans-serif'
-    ];
-
-    // Try each font option
-    for (const fontOption of fontOptions) {
-      try {
-        ctx.font = fontOption;
-        // Test if font works by measuring text
-        const testText = ctx.measureText(name);
-        if (testText.width > 0) {
-          fontLoaded = true;
-          break;
-        }
-      } catch (error) {
-        console.log(`Font ${fontOption} failed, trying next...`);
-        continue;
-      }
-    }
-
-    // If no font worked, use the most basic option
-    if (!fontLoaded) {
-      ctx.font = '56px Arial';
-    }
-
+    // Use a very basic font specification that will work on Vercel
+    ctx.font = 'bold 60px monospace';
     ctx.fillStyle = '#000000'; // Black color
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // Add shadow for better visibility
-    ctx.shadowColor = 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = 2;
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 1;
+    // Add stronger shadow for better visibility
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
     
     // Position the name lower in the center area
     ctx.fillText(name, 700, 480);
 
-    // Add date at bottom left with optimized rendering
-    ctx.font = '16px Arial, sans-serif';
+    // Add date at bottom left
+    ctx.font = 'bold 18px monospace';
     ctx.fillStyle = '#495057';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
