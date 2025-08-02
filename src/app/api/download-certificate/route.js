@@ -1,4 +1,4 @@
-import { createCanvas, loadImage } from 'canvas';
+import Jimp from 'jimp';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 
@@ -31,16 +31,12 @@ export async function GET(request) {
       });
     }
 
-    // Create canvas with certificate dimensions
-    const canvas = createCanvas(1400, 900);
-    const ctx = canvas.getContext('2d');
-
-    // Load the certificate template with error handling
+    // Load the certificate template
     const templatePath = join(process.cwd(), 'public', 'Final_Certificate_Temp.png');
     
     let templateImage;
     try {
-      templateImage = await loadImage(templatePath);
+      templateImage = await Jimp.read(templatePath);
     } catch (error) {
       console.error('Error loading template:', error);
       return new Response('Certificate template not found', { 
@@ -52,70 +48,43 @@ export async function GET(request) {
       });
     }
 
-    // Draw the template as background
-    ctx.drawImage(templateImage, 0, 0, 1400, 900);
-
-    // Try multiple basic fonts to ensure text renders
-    const fonts = ['32px monospace', '32px sans-serif', '32px serif', '28px monospace', '28px sans-serif'];
-    let textRendered = false;
-    
-    for (const font of fonts) {
-      ctx.font = font;
-      ctx.fillStyle = '#000000';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      
-      // Test if this font works by measuring text
-      const testWidth = ctx.measureText(originalName).width;
-      if (testWidth > 10) { // If text width is reasonable, this font works
-        ctx.fillText(originalName, 700, 480);
-        textRendered = true;
-        console.log(`Using font: ${font}, text width: ${testWidth}`);
-        break;
-      }
+    // Load a font for text rendering
+    let font;
+    try {
+      font = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+    } catch (error) {
+      console.error('Error loading font:', error);
+      // Use default font if custom font fails
+      font = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
     }
-    
-    // If no font worked, use the most basic approach
-    if (!textRendered) {
-      ctx.font = '24px monospace';
-      ctx.fillStyle = '#000000';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(originalName, 700, 480);
-      console.log('Using fallback font: 24px monospace');
-    }
-    
-    // Debug logging
-    console.log('Certificate generation debug:', {
-      originalName,
-      cleanName,
-      textRendered,
-      date: date || new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    });
 
-    // Add date at bottom left with simple font
-    ctx.font = '14px monospace';
-    ctx.fillStyle = '#495057';
-    ctx.textAlign = 'left';
-    
-    // Ensure date is properly formatted
+    // Add the name to the certificate
+    templateImage.print(font, 0, 0, {
+      text: originalName,
+      alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
+      alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
+    }, 1400, 900);
+
+    // Add date at bottom left
+    const dateFont = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
     const displayDate = date || new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
     
-    ctx.fillText(`Date: ${displayDate}`, 50, 850);
+    templateImage.print(dateFont, 50, 850, `Date: ${displayDate}`);
 
-    // Convert canvas to buffer with optimized settings
-    const buffer = canvas.toBuffer('image/png', {
-      compressionLevel: 6,
-      filters: canvas.PNG_FILTER_NONE
+    // Debug logging
+    console.log('Certificate generation debug:', {
+      originalName,
+      cleanName,
+      fontUsed: 'Jimp.FONT_SANS_32_BLACK',
+      date: displayDate
     });
+
+    // Convert to buffer
+    const buffer = await templateImage.getBufferAsync(Jimp.MIME_PNG);
 
     // Return the image as a downloadable file with optimized headers
     return new Response(buffer, {
