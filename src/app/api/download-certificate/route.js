@@ -48,25 +48,28 @@ export async function GET(request) {
       });
     }
 
-    // Load a font for text rendering
-    let font;
+    // Load fonts for text rendering
+    let nameFont, dateFont;
     try {
-      font = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+      nameFont = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
+      dateFont = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
     } catch (error) {
-      console.error('Error loading font:', error);
-      // Use default font if custom font fails
-      font = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
+      console.error('Error loading fonts:', error);
+      // Use smaller fonts as fallback
+      nameFont = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
+      dateFont = await Jimp.loadFont(Jimp.FONT_SANS_8_BLACK);
     }
 
-    // Add the name to the certificate
-    templateImage.print(font, 0, 0, {
-      text: originalName,
-      alignmentX: Jimp.HORIZONTAL_ALIGN_CENTER,
-      alignmentY: Jimp.VERTICAL_ALIGN_MIDDLE
-    }, 1400, 900);
+    // Calculate center position for name
+    const imageWidth = templateImage.getWidth();
+    const imageHeight = templateImage.getHeight();
+    const nameX = Math.floor(imageWidth / 2);
+    const nameY = Math.floor(imageHeight / 2);
+
+    // Add the name to the certificate at center
+    templateImage.print(nameFont, nameX - 100, nameY - 20, originalName);
 
     // Add date at bottom left
-    const dateFont = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
     const displayDate = date || new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -80,7 +83,11 @@ export async function GET(request) {
       originalName,
       cleanName,
       fontUsed: 'Jimp.FONT_SANS_32_BLACK',
-      date: displayDate
+      date: displayDate,
+      imageWidth,
+      imageHeight,
+      nameX,
+      nameY
     });
 
     // Convert to buffer
