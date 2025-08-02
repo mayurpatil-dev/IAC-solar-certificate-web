@@ -114,7 +114,7 @@ function MainComponent() {
             {/* Title Section */}
             <div className="text-center px-2 sm:px-4">
               <h1 className="text-lg sm:text-xl md:text-2xl lg:text-4xl font-bold text-gray-800 mb-1 sm:mb-2 leading-tight">
-                909 KWp Solar Power Plant Inauguration
+                908 KWp Solar Power Plant Inauguration
               </h1>
               <p className="text-teal-600 text-sm sm:text-base md:text-lg font-medium mb-1 leading-tight">
                 Renewable Energy Development Program

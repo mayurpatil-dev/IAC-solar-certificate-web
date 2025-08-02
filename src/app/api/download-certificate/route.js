@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import jsPDF from 'jspdf';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 
@@ -31,109 +31,95 @@ export async function GET(request) {
       });
     }
 
-    // Load the certificate template
-    const templatePath = join(process.cwd(), 'public', 'Final_Certificate_Temp.png');
-    
-    let templateBuffer;
-    try {
-      templateBuffer = readFileSync(templatePath);
-    } catch (error) {
-      console.error('Error loading template:', error);
-      return new Response('Certificate template not found', { 
-        status: 500,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Content-Type': 'text/plain',
-        }
-      });
-    }
+    // Create PDF certificate
+    const pdf = new jsPDF('landscape', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // Create text image for name using Sharp
-    const nameText = await sharp({
-      create: {
-        width: 800,
-        height: 100,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0 }
-      }
-    })
-    .composite([{
-      input: {
-        text: {
-          text: originalName,
-          font: 'Arial',
-          fontSize: 48,
-          color: 'black'
-        }
-      },
-      top: 0,
-      left: 0
-    }])
-    .png()
-    .toBuffer();
+    // Set background color (light blue)
+    pdf.setFillColor(240, 248, 255);
+    pdf.rect(0, 0, pageWidth, pageHeight, 'F');
 
-    // Create text image for date
+    // Add border
+    pdf.setDrawColor(0, 0, 0);
+    pdf.setLineWidth(2);
+    pdf.rect(10, 10, pageWidth - 20, pageHeight - 20);
+
+    // Add header
+    pdf.setFontSize(24);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('IAC Nashik', pageWidth / 2, 40, { align: 'center' });
+
+    // Add title
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('908 KWp Solar Power Plant Inauguration', pageWidth / 2, 60, { align: 'center' });
+
+    // Add subtitle
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Renewable Energy Development Program', pageWidth / 2, 80, { align: 'center' });
+
+    // Add certificate text
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('This is to certify that', pageWidth / 2, 120, { align: 'center' });
+
+    // Add employee name (centered and prominent)
+    pdf.setFontSize(32);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(originalName, pageWidth / 2, 150, { align: 'center' });
+
+    // Add participation text
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('has actively participated in the Renewable Energy Development Program', pageWidth / 2, 170, { align: 'center' });
+    pdf.text('demonstrating commitment and awareness toward sustainable energy solutions', pageWidth / 2, 185, { align: 'center' });
+    pdf.text('and contributing to a cleaner, greener future.', pageWidth / 2, 200, { align: 'center' });
+
+    // Add date
     const displayDate = date || new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
 
-    const dateText = await sharp({
-      create: {
-        width: 400,
-        height: 50,
-        channels: 4,
-        background: { r: 0, g: 0, b: 0, alpha: 0 }
-      }
-    })
-    .composite([{
-      input: {
-        text: {
-          text: `Date: ${displayDate}`,
-          font: 'Arial',
-          fontSize: 16,
-          color: '#495057'
-        }
-      },
-      top: 0,
-      left: 0
-    }])
-    .png()
-    .toBuffer();
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`Date: ${displayDate}`, 30, pageHeight - 40);
 
-    // Combine template with text overlays
-    const buffer = await sharp(templateBuffer)
-      .composite([
-        {
-          input: nameText,
-          top: 430, // Center position for name
-          left: 300
-        },
-        {
-          input: dateText,
-          top: 850,
-          left: 50
-        }
-      ])
-      .png()
-      .toBuffer();
+    // Add signature line
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text('Authorized Signature', pageWidth - 80, pageHeight - 40);
+
+    // Add footer
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text('IAC - Nashik Plant 2025', pageWidth / 2, pageHeight - 20, { align: 'center' });
 
     // Debug logging
     console.log('Certificate generation debug:', {
       originalName,
       cleanName,
-      fontUsed: 'Arial',
+      fontUsed: 'helvetica',
       date: displayDate
     });
 
-    // Return the image as a downloadable file with optimized headers
+    // Convert to buffer
+    const buffer = pdf.output('arraybuffer');
+
+    // Return the PDF as a downloadable file
     return new Response(buffer, {
       headers: {
-        'Content-Type': 'image/png',
-        'Content-Disposition': `attachment; filename="Solar_Certificate_${cleanName.replace(/\s+/g, '_')}.png"`,
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="Solar_Certificate_${cleanName.replace(/\s+/g, '_')}.pdf"`,
         'Cache-Control': 'no-cache',
-        'Content-Length': buffer.length.toString(),
+        'Content-Length': buffer.byteLength.toString(),
       },
     });
 
