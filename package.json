@@ -1,12 +1,28 @@
 {
-  "name": "create-project",
-  "version": "0.1.0",
+  "name": "iac-nashik-solar-certificate",
+  "version": "1.0.0",
+  "description": "Official IAC Nashik Solar Plant Certificate Generation Portal - Employee Participation System",
   "private": true,
+  "author": "IAC Nashik Development Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mayurpatil-dev/IAC-solar-certificate-web.git"
+  },
+  "keywords": [
+    "iac",
+    "nashik",
+    "solar",
+    "certificate",
+    "renewable-energy",
+    "employee-portal"
+  ],
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "export": "next export"
   },
   "dependencies": {
     "canvas": "^3.1.2",
@@ -18,5 +34,8 @@
     "autoprefixer": "^10.0.1",
     "postcss": "^8",
     "tailwindcss": "^3.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
