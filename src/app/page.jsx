@@ -64,8 +64,8 @@ function MainComponent() {
   };
 
   const downloadCertificate = async () => {
-    if (!certificateData || !certificateData.downloadUrl) {
-      alert("Certificate not available for download");
+    if (!certificateData || !certificateData.employeeName) {
+      alert("Certificate data not available");
       return;
     }
 
@@ -73,31 +73,39 @@ function MainComponent() {
     setCertificatePreview(null);
 
     try {
-      // Debug: Log the certificate data
-      console.log('Certificate data:', certificateData);
-      
-      // Step 1: Download the name PNG first
-      const nameResponse = await fetch(certificateData.downloadUrl);
-      if (!nameResponse.ok) {
-        throw new Error('Failed to generate name PNG');
-      }
-      
-      // Step 2: Create the name PNG file
-      const nameBlob = await nameResponse.blob();
-      const namePngPath = certificateData.namePngPath;
-      
-      // Create a preview URL for the name image
-      const namePreviewUrl = URL.createObjectURL(nameBlob);
-      setCertificatePreview(namePreviewUrl);
-      
-      // Step 3: Generate the final certificate with name composited
-      const composeResponse = await fetch(certificateData.composeUrl, {
+      // Step 1: Generate the name image
+      const nameImageResponse = await fetch('/api/generate-name-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          namePngPath: namePngPath,
+          name: certificateData.employeeName
+        })
+      });
+
+      if (!nameImageResponse.ok) {
+        throw new Error('Failed to generate name image');
+      }
+
+      const nameImageData = await nameImageResponse.json();
+      
+      if (!nameImageData.success) {
+        throw new Error(nameImageData.error || 'Failed to generate name image');
+      }
+
+      // Create a preview of the name image
+      const namePreviewUrl = `data:image/png;base64,${nameImageData.nameImage}`;
+      setCertificatePreview(namePreviewUrl);
+      
+      // Step 2: Composite the certificate with the name image
+      const composeResponse = await fetch('/api/compose-certificate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          nameImageBase64: nameImageData.nameImage,
           employeeName: certificateData.employeeName
         })
       });
@@ -106,12 +114,34 @@ function MainComponent() {
         throw new Error('Failed to generate final certificate');
       }
       
-      // Step 4: Download the final certificate
-      const certificateBlob = await composeResponse.blob();
+      const composeData = await composeResponse.json();
+      
+      if (!composeData.success) {
+        throw new Error(composeData.error || 'Failed to generate final certificate');
+      }
+      
+      // Step 3: Download the final certificate
+      const downloadResponse = await fetch('/api/download-final-certificate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          certificateImageBase64: composeData.certificateImage,
+          fileName: composeData.fileName
+        })
+      });
+      
+      if (!downloadResponse.ok) {
+        throw new Error('Failed to download certificate');
+      }
+      
+      // Convert response to blob and trigger download
+      const certificateBlob = await downloadResponse.blob();
       const url = window.URL.createObjectURL(certificateBlob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = certificateData.fileName;
+      link.download = composeData.fileName;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
@@ -121,7 +151,7 @@ function MainComponent() {
       console.log('Final certificate generated and downloaded successfully');
     } catch (error) {
       console.error("Certificate generation error:", error);
-      alert("Failed to generate certificate. Please try again.");
+      alert("Failed to generate certificate. Please try again. Error: " + error.message);
     } finally {
       setIsGeneratingCertificate(false);
       setCertificatePreview(null);
@@ -193,11 +223,14 @@ function MainComponent() {
                   </p>
                   {certificatePreview && (
                     <div className="mt-4 flex justify-center">
-                      <img 
-                        src={certificatePreview} 
-                        alt="Certificate Preview" 
-                        className="max-w-full h-auto rounded-lg shadow-md"
-                      />
+                      <div className="bg-white p-4 rounded-lg shadow-lg">
+                        <p className="text-gray-700 text-sm mb-2">Name Preview:</p>
+                        <img 
+                          src={certificatePreview} 
+                          alt="Name Preview" 
+                          className="max-w-full h-auto rounded"
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
