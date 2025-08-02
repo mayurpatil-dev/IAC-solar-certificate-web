@@ -1,4 +1,4 @@
-import { createCanvas, loadImage, registerFont } from 'canvas';
+import { createCanvas, loadImage } from 'canvas';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 
@@ -55,62 +55,41 @@ export async function GET(request) {
     // Draw the template as background
     ctx.drawImage(templateImage, 0, 0, 1400, 900);
 
-    // Try multiple font approaches to ensure text renders properly
-    const fontOptions = [
-      'bold 48px Arial',
-      '48px Arial',
-      'bold 48px sans-serif',
-      '48px sans-serif',
-      'bold 48px monospace',
-      '48px monospace',
-      'bold 48px serif',
-      '48px serif',
-      'bold 36px Arial',
-      '36px Arial',
-      'bold 36px sans-serif',
-      '36px sans-serif'
-    ];
-
-    let fontIndex = 0;
-    let fontSize = 48;
-    let textWidth = 0;
-    let workingFont = '48px sans-serif';
-
-    // Try different fonts until we get a valid text width
-    for (let i = 0; i < fontOptions.length; i++) {
-      ctx.font = fontOptions[i];
-      textWidth = ctx.measureText(originalName).width;
+    // Try multiple basic fonts to ensure text renders
+    const fonts = ['32px monospace', '32px sans-serif', '32px serif', '28px monospace', '28px sans-serif'];
+    let textRendered = false;
+    
+    for (const font of fonts) {
+      ctx.font = font;
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
       
-      // If text width is reasonable (not too small), use this font
-      if (textWidth > 20) {
-        workingFont = fontOptions[i];
-        fontSize = parseInt(workingFont.match(/(\d+)px/)[1]);
+      // Test if this font works by measuring text
+      const testWidth = ctx.measureText(originalName).width;
+      if (testWidth > 10) { // If text width is reasonable, this font works
+        ctx.fillText(originalName, 700, 480);
+        textRendered = true;
+        console.log(`Using font: ${font}, text width: ${testWidth}`);
         break;
       }
     }
-
-    // Set the working font
-    ctx.font = workingFont;
-    ctx.fillStyle = '#000000';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
     
-    // If text is still too wide, reduce font size
-    while (textWidth > 600 && fontSize > 16) {
-      fontSize -= 4;
-      ctx.font = workingFont.replace(/\d+px/, `${fontSize}px`);
-      textWidth = ctx.measureText(originalName).width;
+    // If no font worked, use the most basic approach
+    if (!textRendered) {
+      ctx.font = '24px monospace';
+      ctx.fillStyle = '#000000';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(originalName, 700, 480);
+      console.log('Using fallback font: 24px monospace');
     }
-    
-    // Position the name in the center area
-    ctx.fillText(originalName, 700, 480);
     
     // Debug logging
     console.log('Certificate generation debug:', {
       originalName,
       cleanName,
-      fontUsed: ctx.font,
-      textWidth,
+      textRendered,
       date: date || new Date().toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -118,8 +97,8 @@ export async function GET(request) {
       })
     });
 
-    // Add date at bottom left with reliable font
-    ctx.font = '16px Arial';
+    // Add date at bottom left with simple font
+    ctx.font = '14px monospace';
     ctx.fillStyle = '#495057';
     ctx.textAlign = 'left';
     
