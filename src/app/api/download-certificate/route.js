@@ -1,4 +1,6 @@
-import puppeteer from 'puppeteer';
+import sharp from 'sharp';
+import { join } from 'path';
+import { readFileSync } from 'fs';
 
 export async function GET(request) {
   try {
@@ -16,7 +18,7 @@ export async function GET(request) {
       });
     }
 
-    // Keep original name for display - don't clean it
+    // Keep original name for display
     const originalName = name.trim();
     
     // Debug logging
@@ -27,184 +29,92 @@ export async function GET(request) {
       url: request.url
     });
 
-    // Create simple HTML certificate
+    // Load the certificate template
+    const templatePath = join(process.cwd(), 'public', 'Final_Certificate_Temp.png');
+    const templateBuffer = readFileSync(templatePath);
+    
+    // Get template dimensions
+    const templateMetadata = await sharp(templateBuffer).metadata();
+    const { width, height } = templateMetadata;
+    
+    // Create transparent PNG with name text
+    const nameSvg = `
+      <svg width="800" height="100" xmlns="http://www.w3.org/2000/svg">
+        <text 
+          x="400" 
+          y="60" 
+          font-family="Arial, sans-serif" 
+          font-size="48" 
+          font-weight="bold" 
+          text-anchor="middle" 
+          dominant-baseline="middle"
+          fill="#2c3e50"
+          stroke="#ffffff"
+          stroke-width="2"
+        >${originalName}</text>
+      </svg>
+    `;
+    
+    // Generate transparent PNG with name
+    const nameBuffer = await sharp(Buffer.from(nameSvg))
+      .png()
+      .toBuffer();
+    
+    // Create transparent PNG with date text
     const displayDate = date || new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     });
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Solar Certificate - ${originalName}</title>
-        <style>
-          * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-          }
-          
-          body {
-            font-family: Arial, Helvetica, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-          }
-          
-          .certificate {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 800px;
-            width: 100%;
-          }
-          
-          .header {
-            margin-bottom: 30px;
-          }
-          
-          .company-name {
-            font-size: 28px;
-            font-weight: bold;
-            color: #34495e;
-            margin-bottom: 10px;
-          }
-          
-          .title {
-            font-size: 24px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin-bottom: 10px;
-          }
-          
-          .subtitle {
-            font-size: 18px;
-            color: #7f8c8d;
-            margin-bottom: 40px;
-          }
-          
-          .certificate-text {
-            font-size: 16px;
-            color: #34495e;
-            margin-bottom: 30px;
-          }
-          
-          .employee-name {
-            font-size: 36px;
-            font-weight: bold;
-            color: #2c3e50;
-            margin: 30px 0;
-            padding: 20px;
-            border: 3px solid #3498db;
-            border-radius: 10px;
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-          }
-          
-          .participation-text {
-            font-size: 16px;
-            color: #34495e;
-            line-height: 1.6;
-            margin-bottom: 30px;
-          }
-          
-          .footer {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 2px solid #ecf0f1;
-          }
-          
-          .date {
-            font-size: 14px;
-            color: #7f8c8d;
-          }
-          
-          .signature {
-            font-size: 14px;
-            color: #7f8c8d;
-          }
-          
-          .print-button {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #3498db;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-          }
-          
-          @media print {
-            .print-button {
-              display: none;
-            }
-            body {
-              background: white;
-            }
-            .certificate {
-              box-shadow: none;
-              border: 2px solid #000;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <button class="print-button" onclick="window.print()">Print Certificate</button>
-        <div class="certificate">
-          <div class="header">
-            <div class="company-name">IAC Nashik</div>
-            <div class="title">908 KWp Solar Power Plant Inauguration</div>
-            <div class="subtitle">Renewable Energy Development Program</div>
-          </div>
-          
-          <div class="certificate-text">This is to certify that</div>
-          
-          <div class="employee-name">${originalName}</div>
-          
-          <div class="participation-text">
-            has actively participated in the Renewable Energy Development Program, 
-            demonstrating commitment and awareness toward sustainable energy solutions 
-            and contributing to a cleaner, greener future.
-          </div>
-          
-          <div class="footer">
-            <div class="date">Date: ${displayDate}</div>
-            <div class="signature">Authorized Signature</div>
-          </div>
-        </div>
-        
-        <script>
-          // Debug: Log the name to console
-          console.log('Certificate name:', '${originalName}');
-          
-          // Auto-print after 1 second
-          setTimeout(() => {
-            window.print();
-          }, 1000);
-        </script>
-      </body>
-      </html>
+    
+    const dateSvg = `
+      <svg width="400" height="50" xmlns="http://www.w3.org/2000/svg">
+        <text 
+          x="10" 
+          y="30" 
+          font-family="Arial, sans-serif" 
+          font-size="16" 
+          fill="#7f8c8d"
+        >Date: ${displayDate}</text>
+      </svg>
     `;
+    
+    // Generate transparent PNG with date
+    const dateBuffer = await sharp(Buffer.from(dateSvg))
+      .png()
+      .toBuffer();
+    
+    // Calculate positions for compositing
+    const nameX = Math.floor((width - 800) / 2); // Center the name
+    const nameY = Math.floor((height - 100) / 2); // Center vertically
+    const dateX = 50; // Left side
+    const dateY = height - 100; // Bottom area
+    
+    // Composite the template with text overlays
+    const result = await sharp(templateBuffer)
+      .composite([
+        { input: nameBuffer, top: nameY, left: nameX },
+        { input: dateBuffer, top: dateY, left: dateX }
+      ])
+      .png()
+      .toBuffer();
+    
+    // Debug logging
+    console.log('Certificate generation completed:', {
+      originalName,
+      width,
+      height,
+      namePosition: { x: nameX, y: nameY },
+      datePosition: { x: dateX, y: dateY }
+    });
 
-    // Return the HTML directly
-    return new Response(htmlContent, {
+    // Return the image as a downloadable file
+    return new Response(result, {
       headers: {
-        'Content-Type': 'text/html; charset=utf-8',
+        'Content-Type': 'image/png',
+        'Content-Disposition': `attachment; filename="Solar_Certificate_${originalName.replace(/\s+/g, '_')}.png"`,
         'Cache-Control': 'no-cache',
+        'Content-Length': result.length.toString(),
       },
     });
 
