@@ -1,5 +1,6 @@
 import { createCanvas, loadImage } from 'canvas';
 import { join } from 'path';
+import { writeFileSync } from 'fs';
 
 export async function POST(request) {
   try {
@@ -23,6 +24,11 @@ export async function POST(request) {
     // Load the name image from base64
     const nameImageData = Buffer.from(nameImageBase64, 'base64');
     const nameImage = await loadImage(nameImageData);
+
+    // Save the name image temporarily for inspection
+    const tempNameImagePath = join(process.cwd(), 'public', 'debug_composed_name_image.png');
+    writeFileSync(tempNameImagePath, nameImageData);
+    console.log('Saved debug composed name image to:', tempNameImagePath);
     
     // Create final canvas with template dimensions
     const finalCanvas = createCanvas(templateImage.width, templateImage.height);
@@ -38,6 +44,9 @@ export async function POST(request) {
     // Adjust vertical position to place name in a typical certificate name area
     // This positions the name in the upper third of the certificate
     const nameY = Math.floor(templateImage.height * 0.45 - nameImage.height / 2);
+
+    console.log('Name image dimensions:', { width: nameImage.width, height: nameImage.height });
+    console.log('Name image position:', { x: nameX, y: nameY });
     
     // Composite the name onto the template
     finalCtx.drawImage(nameImage, nameX, nameY);

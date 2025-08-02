@@ -1,4 +1,9 @@
-import { createCanvas } from 'canvas';
+import { createCanvas, registerFont } from 'canvas';
+import { writeFileSync } from 'fs';
+import { join } from 'path';
+
+const fontPath = join(process.cwd(), 'public', 'fonts', 'OpenSans-Regular.ttf');
+registerFont(fontPath, { family: 'Open Sans' });
 
 export async function POST(request) {
   try {
@@ -27,7 +32,7 @@ export async function POST(request) {
     
     // Measure text to determine optimal font size
     let fontSize = 80;
-    ctx.font = `bold ${fontSize}px Arial, Helvetica, sans-serif`;
+    ctx.font = `bold ${fontSize}px "Open Sans"`;
     
     // Adjust font size to fit within canvas
     const maxWidth = canvas.width * 0.9;
@@ -35,7 +40,7 @@ export async function POST(request) {
     
     if (textWidth > maxWidth) {
       fontSize = Math.floor((maxWidth / textWidth) * fontSize);
-      ctx.font = `bold ${fontSize}px Arial, Helvetica, sans-serif`;
+      ctx.font = `bold ${fontSize}px "Open Sans"`;
     }
     
     // Set text properties
@@ -53,6 +58,11 @@ export async function POST(request) {
     
     // Convert to PNG buffer
     const pngBuffer = canvas.toBuffer('image/png');
+
+    // Save the generated image temporarily for inspection
+    const tempPath = join(process.cwd(), 'public', 'debug_name_image.png');
+    writeFileSync(tempPath, pngBuffer);
+    console.log('Saved debug name image to:', tempPath);
     
     // Return the PNG as base64 for easy handling
     const base64Image = pngBuffer.toString('base64');

@@ -23,14 +23,13 @@ function MainComponent() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/generate-certificate", {
+      const response = await fetch("/api/generate-pdf-certificate", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           employeeName: employeeName.trim(),
-          agreed: isAgreed,
         }),
       });
 
@@ -43,7 +42,11 @@ function MainComponent() {
       if (result.success) {
         setIsSubmitted(true);
         setCertificateGenerated(true);
-        setCertificateData(result.certificate);
+        setCertificateData({
+          pdfBase64: result.pdfBase64,
+          fileName: result.fileName,
+          employeeName: employeeName.trim(),
+        });
         
         // Auto scroll to certificate section after a brief delay
         setTimeout(() => {
