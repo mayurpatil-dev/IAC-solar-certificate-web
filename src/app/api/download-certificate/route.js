@@ -31,7 +31,7 @@ export async function GET(request) {
       });
     }
 
-    // Create HTML certificate
+    // Create HTML certificate with multiple font fallbacks
     const displayDate = date || new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -45,8 +45,11 @@ export async function GET(request) {
         <meta charset="UTF-8">
         <title>Solar Certificate</title>
         <style>
+          /* Import Google Fonts for guaranteed availability */
+          @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&display=swap');
+          
           body {
-            font-family: Arial, sans-serif;
+            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
             margin: 0;
             padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -73,22 +76,26 @@ export async function GET(request) {
             font-weight: bold;
             color: #34495e;
             margin-bottom: 10px;
+            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
           .title {
             font-size: 24px;
             font-weight: bold;
             color: #2c3e50;
             margin-bottom: 10px;
+            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
           .subtitle {
             font-size: 18px;
             color: #7f8c8d;
             margin-bottom: 40px;
+            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
           .certificate-text {
             font-size: 16px;
             color: #34495e;
             margin-bottom: 30px;
+            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
           .employee-name {
             font-size: 36px;
@@ -99,12 +106,15 @@ export async function GET(request) {
             border: 3px solid #3498db;
             border-radius: 10px;
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
           }
           .participation-text {
             font-size: 16px;
             color: #34495e;
             line-height: 1.6;
             margin-bottom: 30px;
+            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
           .footer {
             display: flex;
@@ -116,10 +126,12 @@ export async function GET(request) {
           .date {
             font-size: 14px;
             color: #7f8c8d;
+            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
           .signature {
             font-size: 14px;
             color: #7f8c8d;
+            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
         </style>
       </head>
@@ -153,11 +165,24 @@ export async function GET(request) {
     // Launch browser and generate PDF
     const browser = await puppeteer.launch({
       headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: [
+        '--no-sandbox', 
+        '--disable-setuid-sandbox', 
+        '--font-render-hinting=none',
+        '--disable-font-subpixel-positioning',
+        '--disable-gpu-sandbox'
+      ]
     });
     
     const page = await browser.newPage();
+    
+    // Set viewport and user agent for better font rendering
+    await page.setViewport({ width: 1200, height: 800 });
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    
+    // Enable JavaScript and wait for fonts to load
     await page.setContent(htmlContent);
+    await page.waitForTimeout(2000); // Wait longer for Google Fonts to load
     
     const pdf = await page.pdf({
       format: 'A4',
@@ -177,7 +202,7 @@ export async function GET(request) {
     console.log('Certificate generation debug:', {
       originalName,
       cleanName,
-      fontUsed: 'Arial, sans-serif',
+      fontUsed: 'Roboto + Open Sans + Arial + Helvetica fallbacks',
       date: displayDate
     });
 
