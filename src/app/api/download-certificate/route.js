@@ -29,7 +29,7 @@ export async function GET(request) {
       });
     }
 
-    // Create simple HTML certificate with inline fonts
+    // Create simple HTML certificate
     const displayDate = date || new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -41,7 +41,7 @@ export async function GET(request) {
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Solar Certificate</title>
+        <title>Solar Certificate - ${originalName}</title>
         <style>
           * {
             margin: 0;
@@ -134,9 +134,36 @@ export async function GET(request) {
             font-size: 14px;
             color: #7f8c8d;
           }
+          
+          .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+          }
+          
+          @media print {
+            .print-button {
+              display: none;
+            }
+            body {
+              background: white;
+            }
+            .certificate {
+              box-shadow: none;
+              border: 2px solid #000;
+            }
+          }
         </style>
       </head>
       <body>
+        <button class="print-button" onclick="window.print()">Print Certificate</button>
         <div class="certificate">
           <div class="header">
             <div class="company-name">IAC Nashik</div>
@@ -159,47 +186,16 @@ export async function GET(request) {
             <div class="signature">Authorized Signature</div>
           </div>
         </div>
+        
+        <script>
+          // Auto-print after 1 second
+          setTimeout(() => {
+            window.print();
+          }, 1000);
+        </script>
       </body>
       </html>
     `;
-
-    // Launch browser and generate PDF
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox', 
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--no-first-run',
-        '--no-zygote',
-        '--single-process'
-      ]
-    });
-    
-    const page = await browser.newPage();
-    
-    // Set viewport and user agent
-    await page.setViewport({ width: 1200, height: 800 });
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
-    
-    // Set content and wait
-    await page.setContent(htmlContent);
-    await page.waitForTimeout(3000);
-    
-    const pdf = await page.pdf({
-      format: 'A4',
-      landscape: true,
-      printBackground: true,
-      margin: {
-        top: '20px',
-        right: '20px',
-        bottom: '20px',
-        left: '20px'
-      }
-    });
-
-    await browser.close();
 
     // Debug logging
     console.log('Certificate generation debug:', {
@@ -209,13 +205,11 @@ export async function GET(request) {
       date: displayDate
     });
 
-    // Return the PDF as a downloadable file
-    return new Response(pdf, {
+    // Return the HTML directly
+    return new Response(htmlContent, {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="Solar_Certificate_${cleanName.replace(/\s+/g, '_')}.pdf"`,
+        'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-cache',
-        'Content-Length': pdf.length.toString(),
       },
     });
 

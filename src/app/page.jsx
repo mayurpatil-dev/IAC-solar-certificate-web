@@ -68,17 +68,11 @@ function MainComponent() {
     }
 
     try {
-      // Create a temporary link to trigger the download
-      const link = document.createElement('a');
-      link.href = certificateData.downloadUrl;
-      link.download = certificateData.fileName;
-      link.style.display = 'none';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Open certificate in new window
+      window.open(certificateData.downloadUrl, '_blank');
     } catch (error) {
       console.error("Download error:", error);
-      alert("Failed to download certificate. Please try again.");
+      alert("Failed to open certificate. Please try again.");
     }
   };
 
@@ -150,8 +144,8 @@ function MainComponent() {
                     onClick={downloadCertificate}
                     className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg font-medium hover:from-green-600 hover:to-teal-600 transition-all duration-200 flex items-center justify-center gap-2 mx-auto text-xs sm:text-sm md:text-base shadow-lg hover:shadow-xl transform hover:scale-105 touch-manipulation"
                   >
-                    <i className="fas fa-download text-sm sm:text-base"></i>
-                    <span className="whitespace-nowrap">Download Certificate</span>
+                    <i className="fas fa-eye text-sm sm:text-base"></i>
+                    <span className="whitespace-nowrap">View Certificate</span>
                   </button>
                 </div>
               ) : (
