@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+import { PDFDocument, rgb } from 'pdf-lib';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
@@ -23,11 +23,18 @@ export async function POST(request) {
     const templatePath = join(process.cwd(), 'public', 'Final_Certificate_Temp.png');
     const templateImageBytes = readFileSync(templatePath);
 
+    // Load the OpenSans font
+    const fontPath = join(process.cwd(), 'public', 'fonts', 'OpenSans-Regular.ttf');
+    const fontBytes = readFileSync(fontPath);
+
     // Create a new PDF document
     const pdfDoc = await PDFDocument.create();
 
     // Embed the PNG image
     const pngImage = await pdfDoc.embedPng(templateImageBytes);
+
+    // Embed the OpenSans font
+    const font = await pdfDoc.embedFont(fontBytes);
 
     // Add a page with the same size as the image
     const page = pdfDoc.addPage([pngImage.width, pngImage.height]);
@@ -39,9 +46,6 @@ export async function POST(request) {
       width: pngImage.width,
       height: pngImage.height,
     });
-
-    // Embed a font (use StandardFonts.Helvetica or embed OpenSans if available)
-    const font = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
     // Define text properties
     const fontSize = 48;
