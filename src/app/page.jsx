@@ -68,23 +68,51 @@ function MainComponent() {
     }
 
     try {
-      // Debug: Log the download URL
-      console.log('Download URL:', certificateData.downloadUrl);
-      console.log('Employee name:', certificateData.employeeName);
+      // Debug: Log the certificate data
+      console.log('Certificate data:', certificateData);
       
-      // Create a temporary link to trigger the download
+      // Step 1: Download the name PNG first
+      const nameResponse = await fetch(certificateData.downloadUrl);
+      if (!nameResponse.ok) {
+        throw new Error('Failed to generate name PNG');
+      }
+      
+      // Step 2: Create the name PNG file
+      const nameBlob = await nameResponse.blob();
+      const namePngPath = certificateData.namePngPath;
+      
+      // Step 3: Generate the final certificate with name composited
+      const composeResponse = await fetch(certificateData.composeUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          namePngPath: namePngPath,
+          employeeName: certificateData.employeeName
+        })
+      });
+      
+      if (!composeResponse.ok) {
+        throw new Error('Failed to generate final certificate');
+      }
+      
+      // Step 4: Download the final certificate
+      const certificateBlob = await composeResponse.blob();
+      const url = window.URL.createObjectURL(certificateBlob);
       const link = document.createElement('a');
-      link.href = certificateData.downloadUrl;
-      link.download = `name-${certificateData.employeeName.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.href = url;
+      link.download = certificateData.fileName;
       link.style.display = 'none';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
-      console.log('Name PNG download initiated');
+      console.log('Final certificate generated and downloaded successfully');
     } catch (error) {
-      console.error("Download error:", error);
-      alert("Failed to download name PNG. Please try again.");
+      console.error("Certificate generation error:", error);
+      alert("Failed to generate certificate. Please try again.");
     }
   };
 
@@ -156,8 +184,8 @@ function MainComponent() {
                     onClick={downloadCertificate}
                     className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg font-medium hover:from-green-600 hover:to-teal-600 transition-all duration-200 flex items-center justify-center gap-2 mx-auto text-xs sm:text-sm md:text-base shadow-lg hover:shadow-xl transform hover:scale-105 touch-manipulation"
                   >
-                    <i className="fas fa-download text-sm sm:text-base"></i>
-                    <span className="whitespace-nowrap">Download Name PNG</span>
+                    <i className="fas fa-certificate text-sm sm:text-base"></i>
+                    <span className="whitespace-nowrap">Generate Certificate</span>
                   </button>
                 </div>
               ) : (

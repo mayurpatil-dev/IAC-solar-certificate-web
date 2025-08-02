@@ -1,3 +1,7 @@
+import { createCanvas } from 'canvas';
+import { join } from 'path';
+import { writeFileSync } from 'fs';
+
 function handler({ employeeName, agreed }) {
   // Input validation with early returns for better performance
   if (!employeeName || typeof employeeName !== "string") {
@@ -31,7 +35,7 @@ function handler({ employeeName, agreed }) {
     day: "numeric",
   });
 
-  // Optimize filename generation for PDF
+  // Optimize filename generation for PNG
   const safeFileName = trimmedName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
 
   return {
@@ -43,8 +47,10 @@ function handler({ employeeName, agreed }) {
       organization: "IAC Nashik",
       generatedAt: generatedAt,
       participationConfirmed: true,
-      downloadUrl: `/api/download-certificate?name=${encodeURIComponent(trimmedName)}&date=${encodeURIComponent(formattedDate)}`,
-      fileName: `Solar_Certificate_${safeFileName}.pdf`,
+      downloadUrl: `/api/download-certificate?name=${encodeURIComponent(trimmedName)}`,
+      composeUrl: `/api/add-name-to-certificate`,
+      namePngPath: `/name-${safeFileName.toLowerCase()}.png`,
+      fileName: `Solar_Certificate_${safeFileName}.png`,
     },
   };
 }
