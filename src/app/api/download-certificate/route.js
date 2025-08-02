@@ -1,6 +1,6 @@
-import { createCanvas, loadImage } from 'canvas';
+import { createCanvas } from 'canvas';
 import { join } from 'path';
-import { readFileSync } from 'fs';
+import { writeFileSync } from 'fs';
 
 export async function GET(request) {
   try {
@@ -29,7 +29,7 @@ export async function GET(request) {
       url: request.url
     });
 
-    // Step 1: Create transparent PNG with name text only
+    // Create transparent PNG with name text only
     const nameCanvas = createCanvas(800, 100);
     const nameCtx = nameCanvas.getContext('2d');
     
@@ -50,31 +50,15 @@ export async function GET(request) {
     // Draw the text
     nameCtx.fillText(originalName, 400, 50);
     
-    // Convert name to transparent PNG buffer
+    // Convert name to PNG buffer
     const nameBuffer = nameCanvas.toBuffer('image/png');
     
-    // Step 2: Load the certificate template
-    const templatePath = join(process.cwd(), 'public', 'Final_Certificate_Temp.png');
-    const templateImage = await loadImage(templatePath);
+    // Save the name PNG to public folder
+    const safeFileName = originalName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+    const namePngPath = join(process.cwd(), 'public', `name_${safeFileName}.png`);
+    writeFileSync(namePngPath, nameBuffer);
     
-    // Step 3: Create final canvas with template dimensions
-    const finalCanvas = createCanvas(templateImage.width, templateImage.height);
-    const finalCtx = finalCanvas.getContext('2d');
-    
-    // Step 4: Draw the template first
-    finalCtx.drawImage(templateImage, 0, 0);
-    
-    // Step 5: Load the name image and composite it
-    const nameImage = await loadImage(nameBuffer);
-    
-    // Calculate position to center the name on the certificate
-    const nameX = Math.floor((templateImage.width - 800) / 2);
-    const nameY = Math.floor((templateImage.height - 100) / 2);
-    
-    // Composite the name onto the template
-    finalCtx.drawImage(nameImage, nameX, nameY);
-    
-    // Step 6: Add date if provided
+    // Create date PNG if provided
     if (date) {
       const displayDate = date;
       
@@ -94,45 +78,45 @@ export async function GET(request) {
       // Draw the date
       dateCtx.fillText(`Date: ${displayDate}`, 10, 10);
       
-      // Convert date to buffer and composite
+      // Convert date to buffer and save
       const dateBuffer = dateCanvas.toBuffer('image/png');
-      const dateImage = await loadImage(dateBuffer);
-      
-      // Position date at bottom
-      finalCtx.drawImage(dateImage, 50, templateImage.height - 100);
+      const datePngPath = join(process.cwd(), 'public', `date_${safeFileName}.png`);
+      writeFileSync(datePngPath, dateBuffer);
     }
     
-    // Step 7: Convert final result to buffer
-    const result = finalCanvas.toBuffer('image/png');
-    
     // Debug logging
-    console.log('Certificate generation completed:', {
+    console.log('PNG files created:', {
       originalName,
-      templateWidth: templateImage.width,
-      templateHeight: templateImage.height,
-      namePosition: { x: nameX, y: nameY },
-      nameImageSize: { width: nameImage.width, height: nameImage.height }
+      namePngPath,
+      datePngPath: date ? join(process.cwd(), 'public', `date_${safeFileName}.png`) : null,
+      nameBufferSize: nameBuffer.length
     });
 
-    // Return the final certificate image
-    return new Response(result, {
+    // Return success message with file paths
+    return new Response(JSON.stringify({
+      success: true,
+      message: 'Name PNG created successfully',
+      files: {
+        namePng: `/name_${safeFileName}.png`,
+        datePng: date ? `/date_${safeFileName}.png` : null,
+        originalName: originalName
+      }
+    }), {
       headers: {
-        'Content-Type': 'image/png',
-        'Content-Disposition': `attachment; filename="Solar_Certificate_${originalName.replace(/\s+/g, '_')}.png"`,
+        'Content-Type': 'application/json',
         'Cache-Control': 'no-cache',
-        'Content-Length': result.length.toString(),
       },
     });
 
   } catch (error) {
-    console.error('Error generating certificate:', error);
+    console.error('Error generating name PNG:', error);
     console.error('Error details:', {
       name: name,
       date: date,
       errorMessage: error.message,
       stack: error.stack
     });
-    return new Response('Error generating certificate', { 
+    return new Response('Error generating name PNG', { 
       status: 500,
       headers: {
         'Cache-Control': 'no-cache',
