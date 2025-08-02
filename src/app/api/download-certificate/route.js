@@ -1,6 +1,4 @@
 import puppeteer from 'puppeteer';
-import { join } from 'path';
-import { readFileSync } from 'fs';
 
 export async function GET(request) {
   try {
@@ -31,7 +29,7 @@ export async function GET(request) {
       });
     }
 
-    // Create HTML certificate with multiple font fallbacks
+    // Create simple HTML certificate with inline fonts
     const displayDate = date || new Date().toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -45,19 +43,22 @@ export async function GET(request) {
         <meta charset="UTF-8">
         <title>Solar Certificate</title>
         <style>
-          /* Import Google Fonts for guaranteed availability */
-          @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&display=swap');
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
           
           body {
-            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
-            margin: 0;
-            padding: 20px;
+            font-family: Arial, Helvetica, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: 20px;
           }
+          
           .certificate {
             background: white;
             padding: 40px;
@@ -67,36 +68,37 @@ export async function GET(request) {
             max-width: 800px;
             width: 100%;
           }
+          
           .header {
-            color: #2c3e50;
             margin-bottom: 30px;
           }
+          
           .company-name {
             font-size: 28px;
             font-weight: bold;
             color: #34495e;
             margin-bottom: 10px;
-            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
+          
           .title {
             font-size: 24px;
             font-weight: bold;
             color: #2c3e50;
             margin-bottom: 10px;
-            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
+          
           .subtitle {
             font-size: 18px;
             color: #7f8c8d;
             margin-bottom: 40px;
-            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
+          
           .certificate-text {
             font-size: 16px;
             color: #34495e;
             margin-bottom: 30px;
-            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
+          
           .employee-name {
             font-size: 36px;
             font-weight: bold;
@@ -106,16 +108,15 @@ export async function GET(request) {
             border: 3px solid #3498db;
             border-radius: 10px;
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
           }
+          
           .participation-text {
             font-size: 16px;
             color: #34495e;
             line-height: 1.6;
             margin-bottom: 30px;
-            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
+          
           .footer {
             display: flex;
             justify-content: space-between;
@@ -123,15 +124,15 @@ export async function GET(request) {
             padding-top: 20px;
             border-top: 2px solid #ecf0f1;
           }
+          
           .date {
             font-size: 14px;
             color: #7f8c8d;
-            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
+          
           .signature {
             font-size: 14px;
             color: #7f8c8d;
-            font-family: 'Roboto', 'Open Sans', 'Arial', 'Helvetica', 'sans-serif';
           }
         </style>
       </head>
@@ -167,22 +168,24 @@ export async function GET(request) {
       headless: true,
       args: [
         '--no-sandbox', 
-        '--disable-setuid-sandbox', 
-        '--font-render-hinting=none',
-        '--disable-font-subpixel-positioning',
-        '--disable-gpu-sandbox'
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process'
       ]
     });
     
     const page = await browser.newPage();
     
-    // Set viewport and user agent for better font rendering
+    // Set viewport and user agent
     await page.setViewport({ width: 1200, height: 800 });
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36');
     
-    // Enable JavaScript and wait for fonts to load
+    // Set content and wait
     await page.setContent(htmlContent);
-    await page.waitForTimeout(2000); // Wait longer for Google Fonts to load
+    await page.waitForTimeout(3000);
     
     const pdf = await page.pdf({
       format: 'A4',
@@ -202,7 +205,7 @@ export async function GET(request) {
     console.log('Certificate generation debug:', {
       originalName,
       cleanName,
-      fontUsed: 'Roboto + Open Sans + Arial + Helvetica fallbacks',
+      fontUsed: 'Arial, Helvetica, sans-serif',
       date: displayDate
     });
 
