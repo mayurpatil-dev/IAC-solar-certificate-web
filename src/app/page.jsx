@@ -72,19 +72,19 @@ function MainComponent() {
       console.log('Download URL:', certificateData.downloadUrl);
       console.log('Employee name:', certificateData.employeeName);
       
-      // Fetch the PNG creation response
-      const response = await fetch(certificateData.downloadUrl);
-      const result = await response.json();
+      // Create a temporary link to trigger the download
+      const link = document.createElement('a');
+      link.href = certificateData.downloadUrl;
+      link.download = `name-${certificateData.employeeName.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       
-      if (result.success) {
-        console.log('PNG files created:', result.files);
-        alert(`Name PNG created successfully!\n\nFiles created:\n- Name PNG: ${result.files.namePng}\n- Date PNG: ${result.files.datePng || 'Not created'}\n\nYou can now manually add these PNGs to your certificate template.`);
-      } else {
-        alert("Failed to create name PNG");
-      }
+      console.log('Name PNG download initiated');
     } catch (error) {
       console.error("Download error:", error);
-      alert("Failed to create name PNG. Please try again.");
+      alert("Failed to download name PNG. Please try again.");
     }
   };
 
@@ -156,8 +156,8 @@ function MainComponent() {
                     onClick={downloadCertificate}
                     className="bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg font-medium hover:from-green-600 hover:to-teal-600 transition-all duration-200 flex items-center justify-center gap-2 mx-auto text-xs sm:text-sm md:text-base shadow-lg hover:shadow-xl transform hover:scale-105 touch-manipulation"
                   >
-                    <i className="fas fa-image text-sm sm:text-base"></i>
-                    <span className="whitespace-nowrap">Create Name PNG</span>
+                    <i className="fas fa-download text-sm sm:text-base"></i>
+                    <span className="whitespace-nowrap">Download Name PNG</span>
                   </button>
                 </div>
               ) : (
