@@ -55,44 +55,11 @@ export async function GET(request) {
     // Draw the template as background
     ctx.drawImage(templateImage, 0, 0, 1400, 900);
 
-    // Try multiple basic fonts to ensure compatibility
-    const basicFonts = ['Arial', 'Helvetica', 'sans-serif', 'monospace'];
-    let fontSize = 48;
-    let textWidth = 0;
-    let fontIndex = 0;
-    
-    // Try different fonts until we get a valid text width
-    do {
-      ctx.font = `${fontSize}px ${basicFonts[fontIndex]}`;
-      textWidth = ctx.measureText(originalName).width;
-      
-      // If text width is too small, try next font
-      if (textWidth < 10) {
-        fontIndex = (fontIndex + 1) % basicFonts.length;
-        if (fontIndex === 0) {
-          fontSize -= 8;
-          if (fontSize < 12) break;
-        }
-      }
-    } while (textWidth < 10 && fontSize >= 12);
-    
-    // Set final font
-    ctx.font = `${fontSize}px ${basicFonts[fontIndex]}`;
+    // Use the absolute simplest font specification
+    ctx.font = '40px sans-serif';
     ctx.fillStyle = '#000000';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    
-    // No shadow effects to avoid any rendering issues
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
-    
-    // If text is still too wide, reduce font size further
-    while (textWidth > 600 && fontSize > 12) {
-      fontSize -= 4;
-      ctx.font = `${fontSize}px ${basicFonts[fontIndex]}`;
-      textWidth = ctx.measureText(originalName).width;
-    }
     
     // Position the name in the center area
     ctx.fillText(originalName, 700, 480);
@@ -101,8 +68,7 @@ export async function GET(request) {
     console.log('Certificate generation debug:', {
       originalName,
       cleanName,
-      fontUsed: `${fontSize}px ${basicFonts[fontIndex]}`,
-      textWidth,
+      fontUsed: '40px sans-serif',
       date: date || new Date().toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
@@ -110,7 +76,7 @@ export async function GET(request) {
       })
     });
 
-    // Add date at bottom left with simple font
+    // Add date at bottom left
     ctx.font = '16px sans-serif';
     ctx.fillStyle = '#495057';
     ctx.textAlign = 'left';
