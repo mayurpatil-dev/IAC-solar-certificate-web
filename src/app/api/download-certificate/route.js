@@ -1,4 +1,4 @@
-import { createCanvas, loadImage } from 'canvas';
+import { createCanvas, loadImage, registerFont } from 'canvas';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 
@@ -42,8 +42,36 @@ export async function GET(request) {
     // Draw the template as background
     ctx.drawImage(templateImage, 0, 0, 1400, 900);
 
-    // Set cursive font with no weight and black color
-    ctx.font = '56px "Dancing Script", cursive';
+    // Try to use a more elegant font, with fallbacks
+    let fontLoaded = false;
+    const fontOptions = [
+      'bold 56px "Times New Roman", serif',
+      'bold 56px Georgia, serif',
+      'bold 56px Arial, sans-serif',
+      '56px Arial, sans-serif'
+    ];
+
+    // Try each font option
+    for (const fontOption of fontOptions) {
+      try {
+        ctx.font = fontOption;
+        // Test if font works by measuring text
+        const testText = ctx.measureText(name);
+        if (testText.width > 0) {
+          fontLoaded = true;
+          break;
+        }
+      } catch (error) {
+        console.log(`Font ${fontOption} failed, trying next...`);
+        continue;
+      }
+    }
+
+    // If no font worked, use the most basic option
+    if (!fontLoaded) {
+      ctx.font = '56px Arial';
+    }
+
     ctx.fillStyle = '#000000'; // Black color
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -58,7 +86,7 @@ export async function GET(request) {
     ctx.fillText(name, 700, 480);
 
     // Add date at bottom left with optimized rendering
-    ctx.font = '16px Arial';
+    ctx.font = '16px Arial, sans-serif';
     ctx.fillStyle = '#495057';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
