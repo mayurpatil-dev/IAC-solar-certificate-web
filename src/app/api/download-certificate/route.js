@@ -48,21 +48,74 @@ export async function GET(request) {
       });
     }
 
-    // Create SVG text overlay
-    const svgText = `
-      <svg width="1400" height="900" xmlns="http://www.w3.org/2000/svg">
-        <text x="700" y="480" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="black">${originalName}</text>
-        <text x="50" y="850" font-family="Arial, sans-serif" font-size="16" fill="#495057">Date: ${date || new Date().toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"})}</text>
-      </svg>
-    `;
+    // Create text image for name using Sharp
+    const nameText = await sharp({
+      create: {
+        width: 800,
+        height: 100,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 }
+      }
+    })
+    .composite([{
+      input: {
+        text: {
+          text: originalName,
+          font: 'Arial',
+          fontSize: 48,
+          color: 'black'
+        }
+      },
+      top: 0,
+      left: 0
+    }])
+    .png()
+    .toBuffer();
 
-    // Combine template with text overlay
+    // Create text image for date
+    const displayDate = date || new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const dateText = await sharp({
+      create: {
+        width: 400,
+        height: 50,
+        channels: 4,
+        background: { r: 0, g: 0, b: 0, alpha: 0 }
+      }
+    })
+    .composite([{
+      input: {
+        text: {
+          text: `Date: ${displayDate}`,
+          font: 'Arial',
+          fontSize: 16,
+          color: '#495057'
+        }
+      },
+      top: 0,
+      left: 0
+    }])
+    .png()
+    .toBuffer();
+
+    // Combine template with text overlays
     const buffer = await sharp(templateBuffer)
-      .composite([{
-        input: Buffer.from(svgText),
-        top: 0,
-        left: 0
-      }])
+      .composite([
+        {
+          input: nameText,
+          top: 430, // Center position for name
+          left: 300
+        },
+        {
+          input: dateText,
+          top: 850,
+          left: 50
+        }
+      ])
       .png()
       .toBuffer();
 
@@ -70,12 +123,8 @@ export async function GET(request) {
     console.log('Certificate generation debug:', {
       originalName,
       cleanName,
-      fontUsed: 'Arial, sans-serif',
-      date: date || new Date().toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
+      fontUsed: 'Arial',
+      date: displayDate
     });
 
     // Return the image as a downloadable file with optimized headers
