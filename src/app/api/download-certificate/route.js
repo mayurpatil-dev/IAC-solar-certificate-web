@@ -18,7 +18,7 @@ export async function GET(request) {
       });
     }
 
-    // Clean and validate the name - keep original name for display
+    // Keep original name for display
     const originalName = name.trim();
     const cleanName = originalName.replace(/[^\w\s]/g, ''); // Remove special characters except spaces
     if (!cleanName) {
@@ -55,17 +55,17 @@ export async function GET(request) {
     // Draw the template as background
     ctx.drawImage(templateImage, 0, 0, 1400, 900);
 
-    // Use the most reliable font approach for Vercel
-    ctx.font = 'bold 60px monospace';
+    // Use the simplest possible font that works on Vercel
+    ctx.font = '60px serif';
     ctx.fillStyle = '#000000'; // Black color
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // Add stronger shadow for better visibility
-    ctx.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
+    // Add shadow for better visibility
+    ctx.shadowColor = 'rgba(0,0,0,0.5)';
+    ctx.shadowBlur = 2;
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
     
     // Handle long names by adjusting font size
     let fontSize = 60;
@@ -74,40 +74,28 @@ export async function GET(request) {
     // If text is too wide, reduce font size
     while (textWidth > 800 && fontSize > 20) {
       fontSize -= 5;
-      ctx.font = `bold ${fontSize}px monospace`;
-      textWidth = ctx.measureText(originalName).width;
-    }
-    ctx.fillStyle = '#000000'; // Black color
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    
-    // Add stronger shadow for better visibility
-    ctx.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx.shadowBlur = 4;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
-    
-    // If text is still too wide, reduce font size further
-    while (textWidth > 800 && fontSize > 20) {
-      fontSize -= 5;
-      ctx.font = `bold ${fontSize}px ${fontOptions[fontIndex]}`;
+      ctx.font = `${fontSize}px serif`;
       textWidth = ctx.measureText(originalName).width;
     }
     
-    // Position the name in the center area - use original name for display
+    // Position the name in the center area
     ctx.fillText(originalName, 700, 480);
     
     // Debug logging
     console.log('Certificate generation debug:', {
       originalName,
       cleanName,
-      fontUsed: `bold ${fontSize}px monospace`,
+      fontUsed: `${fontSize}px serif`,
       textWidth,
-      date: displayDate
+      date: date || new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
     });
 
-    // Add date at bottom left with better font
-    ctx.font = 'bold 20px monospace';
+    // Add date at bottom left
+    ctx.font = '20px serif';
     ctx.fillStyle = '#495057';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
