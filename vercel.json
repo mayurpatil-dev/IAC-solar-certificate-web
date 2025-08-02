@@ -1,11 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next"
-    }
-  ],
   "functions": {
     "src/app/api/generate-certificate/route.js": {
       "maxDuration": 30
@@ -45,4 +39,4 @@
       ]
     }
   ]
-} 
+}
