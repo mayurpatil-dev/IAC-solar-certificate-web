@@ -16,18 +16,16 @@ export async function GET(request) {
       });
     }
 
-    // Keep original name for display
+    // Keep original name for display - don't clean it
     const originalName = name.trim();
-    const cleanName = originalName.replace(/[^\w\s]/g, ''); // Remove special characters except spaces
-    if (!cleanName) {
-      return new Response('Invalid name provided', { 
-        status: 400,
-        headers: {
-          'Cache-Control': 'no-cache',
-          'Content-Type': 'text/plain',
-        }
-      });
-    }
+    
+    // Debug logging
+    console.log('Certificate generation debug:', {
+      originalName,
+      name,
+      date,
+      url: request.url
+    });
 
     // Create simple HTML certificate
     const displayDate = date || new Date().toLocaleDateString("en-US", {
@@ -108,6 +106,8 @@ export async function GET(request) {
             border: 3px solid #3498db;
             border-radius: 10px;
             background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            word-wrap: break-word;
+            overflow-wrap: break-word;
           }
           
           .participation-text {
@@ -188,6 +188,9 @@ export async function GET(request) {
         </div>
         
         <script>
+          // Debug: Log the name to console
+          console.log('Certificate name:', '${originalName}');
+          
           // Auto-print after 1 second
           setTimeout(() => {
             window.print();
@@ -196,14 +199,6 @@ export async function GET(request) {
       </body>
       </html>
     `;
-
-    // Debug logging
-    console.log('Certificate generation debug:', {
-      originalName,
-      cleanName,
-      fontUsed: 'Arial, Helvetica, sans-serif',
-      date: displayDate
-    });
 
     // Return the HTML directly
     return new Response(htmlContent, {

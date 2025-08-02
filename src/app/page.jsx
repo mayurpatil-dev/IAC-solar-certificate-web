@@ -68,6 +68,10 @@ function MainComponent() {
     }
 
     try {
+      // Debug: Log the download URL
+      console.log('Download URL:', certificateData.downloadUrl);
+      console.log('Employee name:', certificateData.employeeName);
+      
       // Open certificate in new window
       window.open(certificateData.downloadUrl, '_blank');
     } catch (error) {
