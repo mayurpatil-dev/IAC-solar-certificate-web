@@ -1,7 +1,3 @@
-import { createCanvas, loadImage, registerFont } from 'canvas';
-import { writeFileSync } from 'fs';
-import { join } from 'path';
-
 function handler({ employeeName, agreed }) {
   // Input validation with early returns for better performance
   if (!employeeName || typeof employeeName !== "string") {
@@ -35,7 +31,7 @@ function handler({ employeeName, agreed }) {
     day: "numeric",
   });
 
-  // Optimize filename generation
+  // Optimize filename generation for PDF
   const safeFileName = trimmedName.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
 
   return {
@@ -48,7 +44,7 @@ function handler({ employeeName, agreed }) {
       generatedAt: generatedAt,
       participationConfirmed: true,
       downloadUrl: `/api/download-certificate?name=${encodeURIComponent(trimmedName)}&date=${encodeURIComponent(formattedDate)}`,
-      fileName: `Solar_Certificate_${safeFileName}.png`,
+      fileName: `Solar_Certificate_${safeFileName}.pdf`,
     },
   };
 }
