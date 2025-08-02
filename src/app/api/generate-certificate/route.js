@@ -26,7 +26,7 @@ function handler({ employeeName, agreed }) {
     };
   }
 
-  // Optimize date formatting
+  // Optimize date formatting with better locale support
   const now = new Date();
   const generatedAt = now.toISOString();
   const formattedDate = now.toLocaleDateString("en-US", {

@@ -18,6 +18,18 @@ export async function GET(request) {
       });
     }
 
+    // Clean and validate the name
+    const cleanName = name.trim().replace(/[^\w\s]/g, ''); // Remove special characters except spaces
+    if (!cleanName) {
+      return new Response('Invalid name provided', { 
+        status: 400,
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Content-Type': 'text/plain',
+        }
+      });
+    }
+
     // Create canvas with certificate dimensions
     const canvas = createCanvas(1400, 900);
     const ctx = canvas.getContext('2d');
@@ -42,8 +54,8 @@ export async function GET(request) {
     // Draw the template as background
     ctx.drawImage(templateImage, 0, 0, 1400, 900);
 
-    // Use a very basic font specification that will work on Vercel
-    ctx.font = 'bold 60px monospace';
+    // Use a more reliable font specification that works across platforms
+    ctx.font = 'bold 60px Arial, Helvetica, sans-serif';
     ctx.fillStyle = '#000000'; // Black color
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -54,17 +66,40 @@ export async function GET(request) {
     ctx.shadowOffsetX = 2;
     ctx.shadowOffsetY = 2;
     
-    // Position the name lower in the center area
-    ctx.fillText(name, 700, 480);
+    // Handle long names by adjusting font size
+    let fontSize = 60;
+    let fontFamily = 'Arial, Helvetica, sans-serif';
+    
+    // Measure text width and adjust font size if needed
+    ctx.font = `bold ${fontSize}px ${fontFamily}`;
+    let textWidth = ctx.measureText(cleanName).width;
+    
+    // If text is too wide, reduce font size
+    while (textWidth > 800 && fontSize > 30) {
+      fontSize -= 5;
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      textWidth = ctx.measureText(cleanName).width;
+    }
+    
+    // Position the name in the center area
+    ctx.fillText(cleanName, 700, 480);
 
-    // Add date at bottom left
-    ctx.font = 'bold 18px monospace';
+    // Add date at bottom left with better font
+    ctx.font = 'bold 20px Arial, Helvetica, sans-serif';
     ctx.fillStyle = '#495057';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
     ctx.textAlign = 'left';
-    ctx.fillText(`Date: ${date}`, 50, 850);
+    
+    // Ensure date is properly formatted
+    const displayDate = date || new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+    
+    ctx.fillText(`Date: ${displayDate}`, 50, 850);
 
     // Convert canvas to buffer with optimized settings
     const buffer = canvas.toBuffer('image/png', {
@@ -76,7 +111,7 @@ export async function GET(request) {
     return new Response(buffer, {
       headers: {
         'Content-Type': 'image/png',
-        'Content-Disposition': `attachment; filename="Solar_Certificate_${name.replace(/\s+/g, '_')}.png"`,
+        'Content-Disposition': `attachment; filename="Solar_Certificate_${cleanName.replace(/\s+/g, '_')}.png"`,
         'Cache-Control': 'no-cache',
         'Content-Length': buffer.length.toString(),
       },
@@ -84,6 +119,12 @@ export async function GET(request) {
 
   } catch (error) {
     console.error('Error generating certificate:', error);
+    console.error('Error details:', {
+      name: name,
+      date: date,
+      errorMessage: error.message,
+      stack: error.stack
+    });
     return new Response('Error generating certificate', { 
       status: 500,
       headers: {
