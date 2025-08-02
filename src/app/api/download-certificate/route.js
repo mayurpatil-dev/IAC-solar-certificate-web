@@ -18,8 +18,9 @@ export async function GET(request) {
       });
     }
 
-    // Clean and validate the name
-    const cleanName = name.trim().replace(/[^\w\s]/g, ''); // Remove special characters except spaces
+    // Clean and validate the name - keep original name for display
+    const originalName = name.trim();
+    const cleanName = originalName.replace(/[^\w\s]/g, ''); // Remove special characters except spaces
     if (!cleanName) {
       return new Response('Invalid name provided', { 
         status: 400,
@@ -54,8 +55,8 @@ export async function GET(request) {
     // Draw the template as background
     ctx.drawImage(templateImage, 0, 0, 1400, 900);
 
-    // Use a more reliable font specification that works across platforms
-    ctx.font = 'bold 60px Arial, Helvetica, sans-serif';
+    // Use the most basic font specification that works on Vercel
+    ctx.font = 'bold 60px sans-serif';
     ctx.fillStyle = '#000000'; // Black color
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -68,24 +69,22 @@ export async function GET(request) {
     
     // Handle long names by adjusting font size
     let fontSize = 60;
-    let fontFamily = 'Arial, Helvetica, sans-serif';
     
     // Measure text width and adjust font size if needed
-    ctx.font = `bold ${fontSize}px ${fontFamily}`;
-    let textWidth = ctx.measureText(cleanName).width;
+    let textWidth = ctx.measureText(originalName).width;
     
     // If text is too wide, reduce font size
     while (textWidth > 800 && fontSize > 30) {
       fontSize -= 5;
-      ctx.font = `bold ${fontSize}px ${fontFamily}`;
-      textWidth = ctx.measureText(cleanName).width;
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      textWidth = ctx.measureText(originalName).width;
     }
     
-    // Position the name in the center area
-    ctx.fillText(cleanName, 700, 480);
+    // Position the name in the center area - use original name for display
+    ctx.fillText(originalName, 700, 480);
 
     // Add date at bottom left with better font
-    ctx.font = 'bold 20px Arial, Helvetica, sans-serif';
+    ctx.font = 'bold 20px sans-serif';
     ctx.fillStyle = '#495057';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
