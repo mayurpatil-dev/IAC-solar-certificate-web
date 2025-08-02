@@ -55,8 +55,8 @@ export async function GET(request) {
     // Draw the template as background
     ctx.drawImage(templateImage, 0, 0, 1400, 900);
 
-    // Use the most basic font specification that works on Vercel
-    ctx.font = 'bold 60px sans-serif';
+    // Use the most reliable font approach for Vercel
+    ctx.font = 'bold 60px monospace';
     ctx.fillStyle = '#000000'; // Black color
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -69,22 +69,45 @@ export async function GET(request) {
     
     // Handle long names by adjusting font size
     let fontSize = 60;
-    
-    // Measure text width and adjust font size if needed
     let textWidth = ctx.measureText(originalName).width;
     
     // If text is too wide, reduce font size
-    while (textWidth > 800 && fontSize > 30) {
+    while (textWidth > 800 && fontSize > 20) {
       fontSize -= 5;
-      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.font = `bold ${fontSize}px monospace`;
+      textWidth = ctx.measureText(originalName).width;
+    }
+    ctx.fillStyle = '#000000'; // Black color
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Add stronger shadow for better visibility
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur = 4;
+    ctx.shadowOffsetX = 2;
+    ctx.shadowOffsetY = 2;
+    
+    // If text is still too wide, reduce font size further
+    while (textWidth > 800 && fontSize > 20) {
+      fontSize -= 5;
+      ctx.font = `bold ${fontSize}px ${fontOptions[fontIndex]}`;
       textWidth = ctx.measureText(originalName).width;
     }
     
     // Position the name in the center area - use original name for display
     ctx.fillText(originalName, 700, 480);
+    
+    // Debug logging
+    console.log('Certificate generation debug:', {
+      originalName,
+      cleanName,
+      fontUsed: `bold ${fontSize}px monospace`,
+      textWidth,
+      date: displayDate
+    });
 
     // Add date at bottom left with better font
-    ctx.font = 'bold 20px sans-serif';
+    ctx.font = 'bold 20px monospace';
     ctx.fillStyle = '#495057';
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
