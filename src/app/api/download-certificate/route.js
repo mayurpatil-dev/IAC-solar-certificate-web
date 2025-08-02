@@ -1,4 +1,4 @@
-import Jimp from 'jimp';
+import sharp from 'sharp';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 
@@ -34,9 +34,9 @@ export async function GET(request) {
     // Load the certificate template
     const templatePath = join(process.cwd(), 'public', 'Final_Certificate_Temp.png');
     
-    let templateImage;
+    let templateBuffer;
     try {
-      templateImage = await Jimp.read(templatePath);
+      templateBuffer = readFileSync(templatePath);
     } catch (error) {
       console.error('Error loading template:', error);
       return new Response('Certificate template not found', { 
@@ -48,50 +48,35 @@ export async function GET(request) {
       });
     }
 
-    // Load fonts for text rendering
-    let nameFont, dateFont;
-    try {
-      nameFont = await Jimp.loadFont(Jimp.FONT_SANS_32_BLACK);
-      dateFont = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
-    } catch (error) {
-      console.error('Error loading fonts:', error);
-      // Use smaller fonts as fallback
-      nameFont = await Jimp.loadFont(Jimp.FONT_SANS_16_BLACK);
-      dateFont = await Jimp.loadFont(Jimp.FONT_SANS_8_BLACK);
-    }
+    // Create SVG text overlay
+    const svgText = `
+      <svg width="1400" height="900" xmlns="http://www.w3.org/2000/svg">
+        <text x="700" y="480" font-family="Arial, sans-serif" font-size="48" font-weight="bold" text-anchor="middle" fill="black">${originalName}</text>
+        <text x="50" y="850" font-family="Arial, sans-serif" font-size="16" fill="#495057">Date: ${date || new Date().toLocaleDateString("en-US", {year: "numeric", month: "long", day: "numeric"})}</text>
+      </svg>
+    `;
 
-    // Calculate center position for name
-    const imageWidth = templateImage.getWidth();
-    const imageHeight = templateImage.getHeight();
-    const nameX = Math.floor(imageWidth / 2);
-    const nameY = Math.floor(imageHeight / 2);
-
-    // Add the name to the certificate at center
-    templateImage.print(nameFont, nameX - 100, nameY - 20, originalName);
-
-    // Add date at bottom left
-    const displayDate = date || new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    
-    templateImage.print(dateFont, 50, 850, `Date: ${displayDate}`);
+    // Combine template with text overlay
+    const buffer = await sharp(templateBuffer)
+      .composite([{
+        input: Buffer.from(svgText),
+        top: 0,
+        left: 0
+      }])
+      .png()
+      .toBuffer();
 
     // Debug logging
     console.log('Certificate generation debug:', {
       originalName,
       cleanName,
-      fontUsed: 'Jimp.FONT_SANS_32_BLACK',
-      date: displayDate,
-      imageWidth,
-      imageHeight,
-      nameX,
-      nameY
+      fontUsed: 'Arial, sans-serif',
+      date: date || new Date().toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
     });
-
-    // Convert to buffer
-    const buffer = await templateImage.getBufferAsync(Jimp.MIME_PNG);
 
     // Return the image as a downloadable file with optimized headers
     return new Response(buffer, {
