@@ -67,97 +67,38 @@ function MainComponent() {
   };
 
   const downloadCertificate = async () => {
-    if (!certificateData || !certificateData.employeeName) {
+    if (!certificateData || !certificateData.pdfBase64) {
       alert("Certificate data not available");
       return;
     }
 
-    setIsGeneratingCertificate(true);
-    setCertificatePreview(null);
-
     try {
-      // Step 1: Generate the name image
-      const nameImageResponse = await fetch('/api/generate-name-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: certificateData.employeeName
-        })
-      });
+      const pdfData = certificateData.pdfBase64;
+      const fileName = certificateData.fileName;
 
-      if (!nameImageResponse.ok) {
-        throw new Error('Failed to generate name image');
+      // Convert base64 to blob
+      const byteCharacters = atob(pdfData);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
       }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: 'application/pdf' });
 
-      const nameImageData = await nameImageResponse.json();
-      
-      if (!nameImageData.success) {
-        throw new Error(nameImageData.error || 'Failed to generate name image');
-      }
-
-      // Create a preview of the name image
-      const namePreviewUrl = `data:image/png;base64,${nameImageData.nameImage}`;
-      setCertificatePreview(namePreviewUrl);
-      
-      // Step 2: Composite the certificate with the name image
-      const composeResponse = await fetch('/api/compose-certificate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nameImageBase64: nameImageData.nameImage,
-          employeeName: certificateData.employeeName
-        })
-      });
-      
-      if (!composeResponse.ok) {
-        throw new Error('Failed to generate final certificate');
-      }
-      
-      const composeData = await composeResponse.json();
-      
-      if (!composeData.success) {
-        throw new Error(composeData.error || 'Failed to generate final certificate');
-      }
-      
-      // Step 3: Download the final certificate
-      const downloadResponse = await fetch('/api/download-final-certificate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          certificateImageBase64: composeData.certificateImage,
-          fileName: composeData.fileName
-        })
-      });
-      
-      if (!downloadResponse.ok) {
-        throw new Error('Failed to download certificate');
-      }
-      
-      // Convert response to blob and trigger download
-      const certificateBlob = await downloadResponse.blob();
-      const url = window.URL.createObjectURL(certificateBlob);
+      // Create download link and trigger download
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = composeData.fileName;
-      link.style.display = 'none';
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      
-      console.log('Final certificate generated and downloaded successfully');
+
+      console.log('PDF certificate downloaded successfully');
     } catch (error) {
-      console.error("Certificate generation error:", error);
-      alert("Failed to generate certificate. Please try again. Error: " + error.message);
-    } finally {
-      setIsGeneratingCertificate(false);
-      setCertificatePreview(null);
+      console.error('Error downloading PDF certificate:', error);
+      alert('Failed to download certificate. Please try again.');
     }
   };
 
