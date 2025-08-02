@@ -8,6 +8,8 @@ function MainComponent() {
   const [certificateGenerated, setCertificateGenerated] = React.useState(false);
   const [certificateData, setCertificateData] = React.useState(null);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isGeneratingCertificate, setIsGeneratingCertificate] = React.useState(false);
+  const [certificatePreview, setCertificatePreview] = React.useState(null);
 
   // Ref for certificate section
   const certificateSectionRef = React.useRef(null);
@@ -67,6 +69,9 @@ function MainComponent() {
       return;
     }
 
+    setIsGeneratingCertificate(true);
+    setCertificatePreview(null);
+
     try {
       // Debug: Log the certificate data
       console.log('Certificate data:', certificateData);
@@ -80,6 +85,10 @@ function MainComponent() {
       // Step 2: Create the name PNG file
       const nameBlob = await nameResponse.blob();
       const namePngPath = certificateData.namePngPath;
+      
+      // Create a preview URL for the name image
+      const namePreviewUrl = URL.createObjectURL(nameBlob);
+      setCertificatePreview(namePreviewUrl);
       
       // Step 3: Generate the final certificate with name composited
       const composeResponse = await fetch(certificateData.composeUrl, {
@@ -113,6 +122,9 @@ function MainComponent() {
     } catch (error) {
       console.error("Certificate generation error:", error);
       alert("Failed to generate certificate. Please try again.");
+    } finally {
+      setIsGeneratingCertificate(false);
+      setCertificatePreview(null);
     }
   };
 
@@ -168,7 +180,28 @@ function MainComponent() {
             className="bg-white bg-opacity-60 backdrop-blur-sm rounded-xl sm:rounded-2xl shadow-lg p-3 sm:p-4 md:p-8 w-full"
           >
             <div className="text-center py-6 sm:py-8 md:py-16">
-              {certificateGenerated ? (
+              {isGeneratingCertificate ? (
+                <div>
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto mb-3 sm:mb-4 md:mb-6 bg-blue-500 rounded-full flex items-center justify-center animate-pulse">
+                    <i className="fas fa-spinner fa-spin text-white text-lg sm:text-xl md:text-2xl lg:text-3xl"></i>
+                  </div>
+                  <p className="text-blue-600 text-sm sm:text-base md:text-lg lg:text-xl font-semibold mb-2 sm:mb-3 md:mb-4 leading-tight">
+                    Generating Your Certificate...
+                  </p>
+                  <p className="text-gray-800 mb-3 sm:mb-4 md:mb-6 text-xs sm:text-sm md:text-base leading-tight">
+                    Please wait while we create your participation certificate
+                  </p>
+                  {certificatePreview && (
+                    <div className="mt-4 flex justify-center">
+                      <img 
+                        src={certificatePreview} 
+                        alt="Certificate Preview" 
+                        className="max-w-full h-auto rounded-lg shadow-md"
+                      />
+                    </div>
+                  )}
+                </div>
+              ) : certificateGenerated ? (
                 <div>
                   <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 mx-auto mb-3 sm:mb-4 md:mb-6 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
                     <i className="fas fa-check-circle text-white text-lg sm:text-xl md:text-2xl lg:text-3xl"></i>

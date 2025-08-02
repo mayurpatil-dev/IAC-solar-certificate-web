@@ -28,7 +28,9 @@ export async function POST(request) {
     const templateImage = await loadImage(templatePath);
     
     // Step 2: Load the name PNG
-    const namePngPathFull = join(process.cwd(), 'public', namePngPath.replace('/', ''));
+    // Fix the path - remove leading slash and ensure correct path
+    const cleanNamePngPath = namePngPath.startsWith('/') ? namePngPath.substring(1) : namePngPath;
+    const namePngPathFull = join(process.cwd(), 'public', cleanNamePngPath);
     const nameImage = await loadImage(namePngPathFull);
     
     // Step 3: Create final canvas with template dimensions
@@ -77,7 +79,7 @@ export async function POST(request) {
       errorMessage: error.message,
       stack: error.stack
     });
-    return new Response('Error compositing certificate', { 
+    return new Response('Error compositing certificate: ' + error.message, { 
       status: 500,
       headers: {
         'Cache-Control': 'no-cache',
@@ -85,4 +87,4 @@ export async function POST(request) {
       }
     });
   }
-} 
+}

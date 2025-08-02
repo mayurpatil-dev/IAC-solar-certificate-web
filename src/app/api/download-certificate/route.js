@@ -25,26 +25,27 @@ export async function GET(request) {
       url: request.url
     });
 
-    // Create canvas for text
-    const canvas = createCanvas(800, 100);
+    // Create canvas for text with appropriate dimensions
+    // Using a larger canvas to ensure the text fits properly
+    const canvas = createCanvas(1200, 150);
     const ctx = canvas.getContext('2d');
     
     // Make background transparent
-    ctx.clearRect(0, 0, 800, 100);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Set text properties
-    ctx.font = 'bold 48px Arial';
+    // Set text properties with a web-safe font
+    ctx.font = 'bold 60px Arial, Helvetica, sans-serif';
     ctx.fillStyle = '#2c3e50';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // Add white stroke for visibility
+    // Add white stroke for better visibility
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 3;
-    ctx.strokeText(originalName, 400, 50);
+    ctx.lineWidth = 4;
+    ctx.strokeText(originalName, canvas.width / 2, canvas.height / 2);
     
     // Draw the text
-    ctx.fillText(originalName, 400, 50);
+    ctx.fillText(originalName, canvas.width / 2, canvas.height / 2);
     
     // Convert to PNG buffer
     const pngBuffer = canvas.toBuffer('image/png');
@@ -74,7 +75,7 @@ export async function GET(request) {
       errorMessage: error.message,
       stack: error.stack
     });
-    return new Response('Error generating name PNG', { 
+    return new Response('Error generating name PNG: ' + error.message, { 
       status: 500,
       headers: {
         'Cache-Control': 'no-cache',
