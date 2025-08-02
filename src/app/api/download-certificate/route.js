@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import { createCanvas, loadImage } from 'canvas';
 import { join } from 'path';
 import { readFileSync } from 'fs';
 
@@ -29,86 +29,92 @@ export async function GET(request) {
       url: request.url
     });
 
-    // Load the certificate template
+    // Step 1: Create transparent PNG with name text only
+    const nameCanvas = createCanvas(800, 100);
+    const nameCtx = nameCanvas.getContext('2d');
+    
+    // Make background completely transparent
+    nameCtx.clearRect(0, 0, 800, 100);
+    
+    // Set text properties for name
+    nameCtx.font = 'bold 48px Arial';
+    nameCtx.fillStyle = '#2c3e50';
+    nameCtx.textAlign = 'center';
+    nameCtx.textBaseline = 'middle';
+    
+    // Add white stroke for visibility on any background
+    nameCtx.strokeStyle = '#ffffff';
+    nameCtx.lineWidth = 3;
+    nameCtx.strokeText(originalName, 400, 50);
+    
+    // Draw the text
+    nameCtx.fillText(originalName, 400, 50);
+    
+    // Convert name to transparent PNG buffer
+    const nameBuffer = nameCanvas.toBuffer('image/png');
+    
+    // Step 2: Load the certificate template
     const templatePath = join(process.cwd(), 'public', 'Final_Certificate_Temp.png');
-    const templateBuffer = readFileSync(templatePath);
+    const templateImage = await loadImage(templatePath);
     
-    // Get template dimensions
-    const templateMetadata = await sharp(templateBuffer).metadata();
-    const { width, height } = templateMetadata;
+    // Step 3: Create final canvas with template dimensions
+    const finalCanvas = createCanvas(templateImage.width, templateImage.height);
+    const finalCtx = finalCanvas.getContext('2d');
     
-    // Create transparent PNG with name text
-    const nameSvg = `
-      <svg width="800" height="100" xmlns="http://www.w3.org/2000/svg">
-        <text 
-          x="400" 
-          y="60" 
-          font-family="Arial, sans-serif" 
-          font-size="48" 
-          font-weight="bold" 
-          text-anchor="middle" 
-          dominant-baseline="middle"
-          fill="#2c3e50"
-          stroke="#ffffff"
-          stroke-width="2"
-        >${originalName}</text>
-      </svg>
-    `;
+    // Step 4: Draw the template first
+    finalCtx.drawImage(templateImage, 0, 0);
     
-    // Generate transparent PNG with name
-    const nameBuffer = await sharp(Buffer.from(nameSvg))
-      .png()
-      .toBuffer();
+    // Step 5: Load the name image and composite it
+    const nameImage = await loadImage(nameBuffer);
     
-    // Create transparent PNG with date text
-    const displayDate = date || new Date().toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+    // Calculate position to center the name on the certificate
+    const nameX = Math.floor((templateImage.width - 800) / 2);
+    const nameY = Math.floor((templateImage.height - 100) / 2);
     
-    const dateSvg = `
-      <svg width="400" height="50" xmlns="http://www.w3.org/2000/svg">
-        <text 
-          x="10" 
-          y="30" 
-          font-family="Arial, sans-serif" 
-          font-size="16" 
-          fill="#7f8c8d"
-        >Date: ${displayDate}</text>
-      </svg>
-    `;
+    // Composite the name onto the template
+    finalCtx.drawImage(nameImage, nameX, nameY);
     
-    // Generate transparent PNG with date
-    const dateBuffer = await sharp(Buffer.from(dateSvg))
-      .png()
-      .toBuffer();
+    // Step 6: Add date if provided
+    if (date) {
+      const displayDate = date;
+      
+      // Create transparent PNG for date
+      const dateCanvas = createCanvas(400, 50);
+      const dateCtx = dateCanvas.getContext('2d');
+      
+      // Make background transparent
+      dateCtx.clearRect(0, 0, 400, 50);
+      
+      // Set text properties for date
+      dateCtx.font = '16px Arial';
+      dateCtx.fillStyle = '#7f8c8d';
+      dateCtx.textAlign = 'left';
+      dateCtx.textBaseline = 'top';
+      
+      // Draw the date
+      dateCtx.fillText(`Date: ${displayDate}`, 10, 10);
+      
+      // Convert date to buffer and composite
+      const dateBuffer = dateCanvas.toBuffer('image/png');
+      const dateImage = await loadImage(dateBuffer);
+      
+      // Position date at bottom
+      finalCtx.drawImage(dateImage, 50, templateImage.height - 100);
+    }
     
-    // Calculate positions for compositing
-    const nameX = Math.floor((width - 800) / 2); // Center the name
-    const nameY = Math.floor((height - 100) / 2); // Center vertically
-    const dateX = 50; // Left side
-    const dateY = height - 100; // Bottom area
-    
-    // Composite the template with text overlays
-    const result = await sharp(templateBuffer)
-      .composite([
-        { input: nameBuffer, top: nameY, left: nameX },
-        { input: dateBuffer, top: dateY, left: dateX }
-      ])
-      .png()
-      .toBuffer();
+    // Step 7: Convert final result to buffer
+    const result = finalCanvas.toBuffer('image/png');
     
     // Debug logging
     console.log('Certificate generation completed:', {
       originalName,
-      width,
-      height,
+      templateWidth: templateImage.width,
+      templateHeight: templateImage.height,
       namePosition: { x: nameX, y: nameY },
-      datePosition: { x: dateX, y: dateY }
+      nameImageSize: { width: nameImage.width, height: nameImage.height }
     });
 
-    // Return the image as a downloadable file
+    // Return the final certificate image
     return new Response(result, {
       headers: {
         'Content-Type': 'image/png',
