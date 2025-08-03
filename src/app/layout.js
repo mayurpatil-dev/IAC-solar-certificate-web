@@ -8,7 +8,7 @@ export const metadata = {
   description: 'Official employee participation portal for IAC Nashik Solar Plant Inauguration 2025',
   keywords: 'IAC, Nashik, Solar Plant, Certificate, Renewable Energy, IAC Lumax',
   author: 'IAC Nashik Development Team',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
+  metadataBase: new URL('https://iac-nashik-certificate.vercel.app'),
   robots: 'index, follow',
   openGraph: {
     title: 'IAC Nashik - Solar Plant Certificate Portal',
@@ -16,6 +16,13 @@ export const metadata = {
     type: 'website',
     locale: 'en_US',
   },
+}
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: 'no',
 }
 
 export default function RootLayout({ children }) {

@@ -2,6 +2,9 @@ import { PDFDocument, rgb } from 'pdf-lib';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
+// Import fontkit properly for pdf-lib v1.17.1
+import * as fontkit from 'fontkit';
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -30,10 +33,13 @@ export async function POST(request) {
     // Create a new PDF document
     const pdfDoc = await PDFDocument.create();
 
+    // Register fontkit with the PDF document - correct way for pdf-lib v1.17.1
+    pdfDoc.registerFontkit(fontkit);
+
     // Embed the PNG image
     const pngImage = await pdfDoc.embedPng(templateImageBytes);
 
-    // Embed the OpenSans font
+    // Embed the OpenSans font using fontkit
     const font = await pdfDoc.embedFont(fontBytes);
 
     // Add a page with the same size as the image
