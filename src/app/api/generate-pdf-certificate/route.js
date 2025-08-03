@@ -1,104 +1,61 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
+import { PDFDocument, rgb } from 'pdf-lib';
+import fontkit from '@pdf-lib/fontkit';
+import fs from 'fs';
+import path from 'path';
 
-export async function POST(request) {
+export async function POST(req) {
   try {
-    const body = await request.json();
-    const { employeeName } = body;
+    const { name } = await req.json();
 
-    if (!employeeName || typeof employeeName !== 'string' || employeeName.trim() === '') {
-      return new Response(JSON.stringify({
-        success: false,
-        error: 'Employee name is required and must be a non-empty string',
-      }), {
-        status: 400,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const cleanName = employeeName.trim();
-
-    // Dynamically import pdf-lib and fontkit to avoid build issues
-    const { PDFDocument, rgb } = await import('pdf-lib');
-    const fontkit = await import('fontkit');
-
-    // Load the certificate template image (PNG)
-    const templatePath = join(process.cwd(), 'public', 'Final_Certificate_Temp.png');
-    const templateImageBytes = readFileSync(templatePath);
-
-    // Load the OpenSans font
-    const fontPath = join(process.cwd(), 'public', 'fonts', 'OpenSans-Regular.ttf');
-    const fontBytes = readFileSync(fontPath);
-
-    // Create a new PDF document
     const pdfDoc = await PDFDocument.create();
-
-    // Register fontkit with the PDF document - correct way for pdf-lib v1.17.1
     pdfDoc.registerFontkit(fontkit);
 
-    // Embed the PNG image
-    const pngImage = await pdfDoc.embedPng(templateImageBytes);
+    // Load the background certificate image
+    const bgPath = path.join(process.cwd(), 'public/Final_certificate_template.png');
+    const bgBytes = fs.readFileSync(bgPath);
+    const bgImage = await pdfDoc.embedPng(bgBytes);
 
-    // Embed the OpenSans font using fontkit
-    const font = await pdfDoc.embedFont(fontBytes);
+    const page = pdfDoc.addPage([1194, 768]);
+    const { width } = page.getSize();
 
-    // Add a page with the same size as the image
-    const page = pdfDoc.addPage([pngImage.width, pngImage.height]);
-
-    // Draw the certificate template image on the page
-    page.drawImage(pngImage, {
+    page.drawImage(bgImage, {
       x: 0,
       y: 0,
-      width: pngImage.width,
-      height: pngImage.height,
+      width: 1194,
+      height: 768,
     });
 
-    // Define text properties
-    const fontSize = 48;
-    const textWidth = font.widthOfTextAtSize(cleanName, fontSize);
-    const textHeight = font.heightAtSize(fontSize);
+    // Load and use the correct font
+    const fontPath = path.join(process.cwd(), 'public/fonts/NotoSans-Regular.ttf');
+    const fontBytes = fs.readFileSync(fontPath);
+    const unicodeFont = await pdfDoc.embedFont(fontBytes);
 
-    // Calculate position to center the name horizontally and place vertically
-    const x = (pngImage.width - textWidth) / 2;
-    const y = pngImage.height * 0.45;
+    // Adjust text size if name is long
+    const fontSize = name.length > 20 ? 26 : 32;
+    const textWidth = unicodeFont.widthOfTextAtSize(name, fontSize);
+    const xPosition = (width - textWidth) / 2;
 
-    // Draw the employee name on the certificate
-    page.drawText(cleanName, {
-      x,
-      y,
+    // Draw the name in the center
+    page.drawText(name, {
+      x: xPosition,
+      y: 390,
       size: fontSize,
-      font,
-      color: rgb(0.17, 0.24, 0.31), // dark blue color
+      font: unicodeFont,
+      color: rgb(0, 0, 0),
     });
 
-    // Serialize the PDF to bytes
     const pdfBytes = await pdfDoc.save();
 
-    // Return the PDF as base64 string
-    const base64Pdf = Buffer.from(pdfBytes).toString('base64');
-
-    return new Response(JSON.stringify({
-      success: true,
-      pdfBase64: base64Pdf,
-      fileName: `Solar_Certificate_${cleanName.replace(/\s+/g, '_')}.pdf`,
-    }), {
+    return new Response(pdfBytes, {
+      status: 200,
       headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'inline; filename=certificate.pdf',
       },
     });
 
-  } catch (error) {
-    console.error('Error generating PDF certificate:', error);
-    return new Response(JSON.stringify({
-      success: false,
-      error: 'Error generating PDF certificate: ' + error.message,
-    }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache',
-      },
-    });
+  } catch (err) {
+    console.error('PDF Generation Error:', err);
+    return new Response('Failed to generate PDF', { status: 500 });
   }
 }
