@@ -20,86 +20,21 @@ function MainComponent() {
       return;
     }
 
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("/api/generate-pdf-certificate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          employeeName: employeeName.trim(),
-        }),
+    setIsSubmitted(true);
+    setCertificateGenerated(true);
+    
+    // Auto scroll to certificate section after a brief delay
+    setTimeout(() => {
+      certificateSectionRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
       });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate certificate");
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
-        setIsSubmitted(true);
-        setCertificateGenerated(true);
-        setCertificateData({
-          pdfBase64: result.pdfBase64,
-          fileName: result.fileName,
-          employeeName: employeeName.trim(),
-        });
-        
-        // Auto scroll to certificate section after a brief delay
-        setTimeout(() => {
-          certificateSectionRef.current?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          });
-        }, 500);
-      } else {
-        throw new Error(result.error || "Failed to generate certificate");
-      }
-    } catch (error) {
-      console.error("Error generating certificate:", error);
-      alert("Failed to generate certificate. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
+    }, 500);
   };
 
   const downloadCertificate = async () => {
-    if (!certificateData || !certificateData.pdfBase64) {
-      alert("Certificate data not available");
-      return;
-    }
-
-    try {
-      const pdfData = certificateData.pdfBase64;
-      const fileName = certificateData.fileName;
-
-      // Convert base64 to blob
-      const byteCharacters = atob(pdfData);
-      const byteNumbers = new Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-      const byteArray = new Uint8Array(byteNumbers);
-      const blob = new Blob([byteArray], { type: 'application/pdf' });
-
-      // Create download link and trigger download
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      console.log('PDF certificate downloaded successfully');
-    } catch (error) {
-      console.error('Error downloading PDF certificate:', error);
-      alert('Failed to download certificate. Please try again.');
-    }
+    // Redirect to the certificate page with the employee name as a parameter
+    window.location.href = `/certificate?name=${encodeURIComponent(employeeName)}`;
   };
 
   return (
