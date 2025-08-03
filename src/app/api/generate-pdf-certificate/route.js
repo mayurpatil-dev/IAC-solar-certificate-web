@@ -1,9 +1,5 @@
-import { PDFDocument, rgb } from 'pdf-lib';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-
-// Import fontkit properly for pdf-lib v1.17.1
-import * as fontkit from 'fontkit';
 
 export async function POST(request) {
   try {
@@ -21,6 +17,10 @@ export async function POST(request) {
     }
 
     const cleanName = employeeName.trim();
+
+    // Dynamically import pdf-lib and fontkit to avoid build issues
+    const { PDFDocument, rgb } = await import('pdf-lib');
+    const fontkit = await import('fontkit');
 
     // Load the certificate template image (PNG)
     const templatePath = join(process.cwd(), 'public', 'Final_Certificate_Temp.png');
