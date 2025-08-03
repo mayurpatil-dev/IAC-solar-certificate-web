@@ -5,9 +5,13 @@ import fontkit from '@pdf-lib/fontkit';
 import fs from 'fs';
 import path from 'path';
 
-export async function POST(req) {
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
   try {
-    const { name } = await req.json();
+    const { name } = req.body;
 
     const pdfDoc = await PDFDocument.create();
     pdfDoc.registerFontkit(fontkit);
@@ -48,16 +52,12 @@ export async function POST(req) {
 
     const pdfBytes = await pdfDoc.save();
 
-    return new Response(pdfBytes, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'inline; filename=certificate.pdf',
-      },
-    });
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename=certificate.pdf');
+    res.status(200).send(pdfBytes);
 
   } catch (err) {
     console.error('PDF Generation Error:', err);
-    return new Response('Failed to generate PDF', { status: 500 });
+    res.status(500).json({ error: 'Failed to generate PDF' });
   }
 }
