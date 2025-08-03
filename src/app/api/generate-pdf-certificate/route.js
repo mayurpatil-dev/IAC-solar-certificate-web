@@ -11,7 +11,7 @@ export async function POST(req) {
     pdfDoc.registerFontkit(fontkit);
 
     // Load the background certificate image
-    const bgPath = path.join(process.cwd(), 'public/Final_certificate_template.png');
+    const bgPath = path.join(process.cwd(), 'public/Final_Certificate_Temp.png');
     const bgBytes = fs.readFileSync(bgPath);
     const bgImage = await pdfDoc.embedPng(bgBytes);
 
