@@ -2,8 +2,8 @@ import { createCanvas, registerFont } from 'canvas';
 import { writeFileSync } from 'fs';
 import { join } from 'path';
 
-const fontPath = join(process.cwd(), 'public', 'fonts', 'OpenSans-Regular.ttf');
-registerFont(fontPath, { family: 'Open Sans' });
+const fontPath = join(process.cwd(), 'public', 'fonts', 'NotoSans-Regular.ttf');
+registerFont(fontPath, { family: 'Noto Sans' });
 
 export async function POST(request) {
   try {
@@ -32,7 +32,7 @@ export async function POST(request) {
     
     // Measure text to determine optimal font size
     let fontSize = 80;
-    ctx.font = `bold ${fontSize}px "Open Sans"`;
+    ctx.font = `bold ${fontSize}px "Noto Sans"`;
     
     // Adjust font size to fit within canvas
     const maxWidth = canvas.width * 0.9;
@@ -40,7 +40,7 @@ export async function POST(request) {
     
     if (textWidth > maxWidth) {
       fontSize = Math.floor((maxWidth / textWidth) * fontSize);
-      ctx.font = `bold ${fontSize}px "Open Sans"`;
+      ctx.font = `bold ${fontSize}px "Noto Sans"`;
     }
     
     // Set text properties
